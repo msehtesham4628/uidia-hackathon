@@ -1,0 +1,111 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import Layout from './components/Layout';
+import Dashboard from './components/Dashboard';
+import AnalysisPanel from './components/AnalysisPanel';
+import FilterBar from './components/FilterBar';
+import { generateMockData, aggregateData, STATES, TYPES } from './services/dataUtils';
+import { analyzeDataset } from './services/gemini';
+import { EnrolmentRecord, AggregatedStats, AIAnalysisResult, FilterState } from './types';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [data, setData] = useState<EnrolmentRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Filter State
+  const [filters, setFilters] = useState<FilterState>({
+    startDate: '',
+    endDate: '',
+    state: 'All',
+    type: 'All',
+    district: ''
+  });
+  
+  // AI State
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AIAnalysisResult | null>(null);
+
+  // Initialize data on mount
+  useEffect(() => {
+    refreshData();
+  }, []);
+
+  const refreshData = () => {
+    setIsLoading(true);
+    // Simulate API delay for realism
+    setTimeout(() => {
+      const newData = generateMockData(3000);
+      setData(newData);
+      setAnalysisResult(null); // Reset analysis when data changes
+      setIsLoading(false);
+    }, 800);
+  };
+
+  // Filter Data
+  const filteredData = useMemo(() => {
+    return data.filter(record => {
+      // Date Check
+      if (filters.startDate && record.date < filters.startDate) return false;
+      if (filters.endDate && record.date > filters.endDate) return false;
+      
+      // State Check
+      if (filters.state !== 'All' && record.state !== filters.state) return false;
+      
+      // Type Check
+      if (filters.type !== 'All' && record.type !== filters.type) return false;
+
+      // District Check (Case Insensitive Partial Match)
+      if (filters.district && !record.district.toLowerCase().includes(filters.district.toLowerCase())) return false;
+      
+      return true;
+    });
+  }, [data, filters]);
+
+  // Memoize aggregated stats based on filtered data
+  const stats: AggregatedStats = useMemo(() => {
+    return aggregateData(filteredData);
+  }, [filteredData]);
+
+  const handleRunAnalysis = async () => {
+    // We analyze the filtered dataset
+    if (filteredData.length === 0) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const result = await analyzeDataset(stats);
+      setAnalysisResult(result);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+      
+      <FilterBar 
+        filters={filters} 
+        setFilters={setFilters} 
+        availableStates={STATES} 
+        availableTypes={TYPES} 
+      />
+
+      {activeTab === 'dashboard' && (
+        <Dashboard 
+          stats={stats} 
+          onRefresh={refreshData} 
+          isLoading={isLoading} 
+        />
+      )}
+
+      {(activeTab === 'anomalies' || activeTab === 'insights') && (
+        <AnalysisPanel 
+          analysis={analysisResult} 
+          isAnalyzing={isAnalyzing} 
+          onRunAnalysis={handleRunAnalysis} 
+        />
+      )}
+    </Layout>
+  );
+}

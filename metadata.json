@@ -1,0 +1,5 @@
+{
+  "name": "UIDAI Insight - Aadhaar Analytics",
+  "description": "Advanced analytics dashboard for Aadhaar enrolment and update datasets using Gemini for anomaly detection and trend forecasting.",
+  "requestFramePermissions": []
+}
