@@ -2,7 +2,7 @@ import React from 'react';
 import { AggregatedStats } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import StatsCard from './StatsCard';
-import { Users, FileCheck, AlertTriangle, Activity, SearchX } from 'lucide-react';
+import { Users, FileCheck, AlertTriangle, Activity, SearchX, Clock } from 'lucide-react';
 
 interface DashboardProps {
   stats: AggregatedStats;
@@ -45,6 +45,11 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, onRefresh, isLoading }) =>
     );
   }
 
+  // Calculate derived stats
+  const totalRejections = stats.byDate.reduce((acc, curr) => acc + curr.rejections, 0);
+  const totalSuccess = Math.round((stats.totalRecords * stats.successRate) / 100);
+  const totalPending = stats.totalRecords - totalSuccess - totalRejections;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -62,7 +67,7 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, onRefresh, isLoading }) =>
       </div>
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <StatsCard 
           title="Total Processed" 
           value={stats.totalRecords.toLocaleString()} 
@@ -83,8 +88,14 @@ const Dashboard: React.FC<DashboardProps> = ({ stats, onRefresh, isLoading }) =>
           icon={<Users className="w-6 h-6" />}
         />
         <StatsCard 
-          title="Rejections" 
-          value={stats.byDate.reduce((acc, curr) => acc + curr.rejections, 0)}
+          title="Pending Reviews" 
+          value={totalPending.toLocaleString()}
+          subValue="Awaiting Action"
+          icon={<Clock className="w-6 h-6 text-blue-600" />}
+        />
+        <StatsCard 
+          title="Rejected Records" 
+          value={totalRejections}
           subValue="Requires Attention"
           icon={<AlertTriangle className="w-6 h-6 text-amber-600" />}
         />
