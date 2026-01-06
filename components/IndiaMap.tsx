@@ -5,6 +5,47 @@ import { scaleQuantile } from 'd3-scale';
 // Reliable TopoJSON source for India states (Deldersveld)
 const INDIA_MAP_URL = 'https://raw.githubusercontent.com/deldersveld/topojson/master/countries/india/india-states.json';
 
+const STATE_ABBREVIATIONS: Record<string, string> = {
+  "andhra pradesh": "AP",
+  "arunachal pradesh": "AR",
+  "assam": "AS",
+  "bihar": "BR",
+  "chhattisgarh": "CT",
+  "goa": "GA",
+  "gujarat": "GJ",
+  "haryana": "HR",
+  "himachal pradesh": "HP",
+  "jharkhand": "JH",
+  "karnataka": "KA",
+  "kerala": "KL",
+  "madhya pradesh": "MP",
+  "maharashtra": "MH",
+  "manipur": "MN",
+  "meghalaya": "ML",
+  "mizoram": "MZ",
+  "nagaland": "NL",
+  "odisha": "OD",
+  "orissa": "OD",
+  "punjab": "PB",
+  "rajasthan": "RJ",
+  "sikkim": "SK",
+  "tamil nadu": "TN",
+  "telangana": "TG",
+  "tripura": "TR",
+  "uttar pradesh": "UP",
+  "uttarakhand": "UK",
+  "uttaranchal": "UK",
+  "west bengal": "WB",
+  "andaman and nicobar islands": "AN",
+  "chandigarh": "CH",
+  "dadra and nagar haveli and daman and diu": "DN",
+  "delhi": "DL",
+  "jammu and kashmir": "JK",
+  "ladakh": "LA",
+  "lakshadweep": "LD",
+  "puducherry": "PY"
+};
+
 interface IndiaMapProps {
   data: { name: string; count: number }[];
 }
@@ -140,7 +181,9 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
                       key={geo.rsmKey}
                       geography={geo}
                       onMouseEnter={() => {
-                        setTooltip(`${rawName}: ${count.toLocaleString()} records`);
+                        const abbr = STATE_ABBREVIATIONS[stateName];
+                        const abbrSuffix = abbr ? ` (${abbr})` : '';
+                        setTooltip(`${rawName}${abbrSuffix}: ${count.toLocaleString()} records`);
                       }}
                       onMouseLeave={() => {
                         setTooltip(null);
