@@ -3,7 +3,7 @@ import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import AnalysisPanel from './components/AnalysisPanel';
 import FilterBar from './components/FilterBar';
-import { generateMockData, aggregateData, STATES, TYPES, DISTRICTS } from './services/dataUtils';
+import { generateMockData, aggregateData, STATES, TYPES, DISTRICTS_BY_STATE } from './services/dataUtils';
 import { analyzeDataset } from './services/gemini';
 import { EnrolmentRecord, AggregatedStats, AIAnalysisResult, FilterState } from './types';
 
@@ -61,6 +61,16 @@ export default function App() {
     });
   }, [data, filters]);
 
+  // Derived Districts based on selected State
+  const availableDistricts = useMemo(() => {
+    if (filters.state === 'All') {
+      // If no state selected, optionally show all districts or just a massive list
+      // For performance and UX, usually we wait for state, but we can return all flattened
+      return Object.values(DISTRICTS_BY_STATE).flat().sort();
+    }
+    return DISTRICTS_BY_STATE[filters.state]?.sort() || [];
+  }, [filters.state]);
+
   // Memoize aggregated stats based on filtered data
   const stats: AggregatedStats = useMemo(() => {
     return aggregateData(filteredData);
@@ -88,7 +98,7 @@ export default function App() {
         filters={filters} 
         setFilters={setFilters} 
         availableStates={STATES} 
-        availableDistricts={DISTRICTS}
+        availableDistricts={availableDistricts}
         availableTypes={TYPES} 
       />
 

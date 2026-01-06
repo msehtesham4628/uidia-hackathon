@@ -37,8 +37,11 @@ const STATE_ABBREVIATIONS: Record<string, string> = {
   "uttaranchal": "UK",
   "west bengal": "WB",
   "andaman and nicobar islands": "AN",
+  "andaman and nicobar": "AN",
   "chandigarh": "CH",
   "dadra and nagar haveli and daman and diu": "DN",
+  "dadra and nagar haveli": "DN",
+  "daman and diu": "DD",
   "delhi": "DL",
   "jammu and kashmir": "JK",
   "ladakh": "LA",
@@ -105,14 +108,17 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
 
   const statsMap = useMemo(() => {
     return data.reduce((acc, curr) => {
-      // Normalize state name for better matching
-      // Map some common variations if necessary
-      let stateName = curr.name.toLowerCase();
-      // Simple mapping for potential mismatches (example)
-      if (stateName === 'odisha') stateName = 'orissa'; 
-      if (stateName === 'uttarakhand') stateName = 'uttaranchal';
-      
+      const stateName = curr.name.toLowerCase();
       acc[stateName] = curr.count;
+      
+      // Add aliases to ensure map lookups find the data even if names differ slightly
+      // (e.g., Map has 'Orissa', Data has 'Odisha')
+      if (stateName === 'odisha') acc['orissa'] = curr.count;
+      if (stateName === 'orissa') acc['odisha'] = curr.count;
+      if (stateName === 'uttarakhand') acc['uttaranchal'] = curr.count;
+      if (stateName === 'uttaranchal') acc['uttarakhand'] = curr.count;
+      if (stateName === 'andaman and nicobar islands') acc['andaman and nicobar'] = curr.count;
+      
       return acc;
     }, {} as Record<string, number>);
   }, [data]);
@@ -150,12 +156,14 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
       </div>
       
       <div className="flex-1 min-h-[450px] flex items-center justify-center relative bg-slate-50/30 rounded-lg overflow-hidden">
-        {loading ? (
-          <div className="flex flex-col items-center gap-3 text-slate-400">
-             <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-500 rounded-full animate-spin"></div>
-             <span className="text-sm font-semibold tracking-wide">Initializing Geographic Data...</span>
+        {loading && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm transition-all duration-300">
+             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin shadow-md"></div>
+             <span className="mt-3 text-sm font-semibold text-slate-700 tracking-wide bg-white/80 px-4 py-1.5 rounded-full shadow-sm">Loading Map Topology...</span>
           </div>
-        ) : (
+        )}
+
+        {!loading && geoData && (
           <ComposableMap
             projectionConfig={{ scale: 1000, center: [82, 22] }}
             width={800}
@@ -169,12 +177,8 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
                   const rawName = geo.properties.NAME_1 || geo.properties.ST_NM || geo.properties.state_name || "";
                   const stateName = rawName.toLowerCase();
                   
-                  // Check mapped names (e.g. orissa -> odisha map check)
+                  // Lookup count using normalized names/aliases
                   let count = statsMap[stateName] || 0;
-                  
-                  // Inverse check if map has 'orissa' but data has 'odisha' (which is normalized to odisha in statsMap)
-                  // The statsMap keys are already normalized to what we expect from data (e.g. odisha).
-                  // If map says 'orissa', we check statsMap['orissa']. If statsMap['orissa'] exists (added in statsMap calc), we use it.
 
                   return (
                     <Geography

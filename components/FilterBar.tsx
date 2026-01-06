@@ -12,7 +12,14 @@ interface FilterBarProps {
 
 const FilterBar: React.FC<FilterBarProps> = ({ filters, setFilters, availableStates, availableDistricts, availableTypes }) => {
   const handleChange = (key: keyof FilterState, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters(prev => {
+      const newFilters = { ...prev, [key]: value };
+      // Reset district if state changes to avoid invalid district selection
+      if (key === 'state') {
+        newFilters.district = 'All';
+      }
+      return newFilters;
+    });
   };
 
   const clearFilters = () => {
