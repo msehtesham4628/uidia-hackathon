@@ -6,11 +6,15 @@ interface StatsCardProps {
   subValue?: string;
   trend?: 'up' | 'down' | 'neutral';
   icon?: React.ReactNode;
+  tooltip?: string;
 }
 
-const StatsCard: React.FC<StatsCardProps> = ({ title, value, subValue, trend, icon }) => {
+const StatsCard: React.FC<StatsCardProps> = ({ title, value, subValue, trend, icon, tooltip }) => {
   return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+    <div 
+      className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm transition-all hover:border-slate-300"
+      title={tooltip}
+    >
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm font-medium text-slate-500">{title}</p>

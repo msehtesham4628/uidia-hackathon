@@ -6,10 +6,11 @@ interface FilterBarProps {
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   availableStates: string[];
+  availableDistricts: string[];
   availableTypes: readonly string[];
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({ filters, setFilters, availableStates, availableTypes }) => {
+const FilterBar: React.FC<FilterBarProps> = ({ filters, setFilters, availableStates, availableDistricts, availableTypes }) => {
   const handleChange = (key: keyof FilterState, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -20,11 +21,11 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, setFilters, availableSta
       endDate: '',
       state: 'All',
       type: 'All',
-      district: ''
+      district: 'All'
     });
   };
 
-  const hasActiveFilters = filters.startDate || filters.endDate || filters.state !== 'All' || filters.type !== 'All' || filters.district !== '';
+  const hasActiveFilters = filters.startDate || filters.endDate || filters.state !== 'All' || filters.type !== 'All' || filters.district !== 'All';
 
   return (
     <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6">
@@ -88,19 +89,25 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, setFilters, availableSta
             </div>
           </div>
 
-          {/* District Search */}
+          {/* District Selector */}
           <div className="relative group">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
              </div>
-             <input
-              type="text"
+             <select
               value={filters.district}
               onChange={(e) => handleChange('district', e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-slate-600 placeholder-slate-400"
-              placeholder="Search District"
-              aria-label="Search District"
-            />
+              className="w-full pl-9 pr-10 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-slate-600 appearance-none bg-white cursor-pointer hover:border-slate-400"
+              aria-label="Filter by District"
+            >
+              <option value="All">All Districts</option>
+              {availableDistricts.map(district => (
+                <option key={district} value={district}>{district}</option>
+              ))}
+            </select>
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <ChevronDown className="h-4 w-4 text-slate-400" />
+            </div>
           </div>
 
           {/* Type Selector */}

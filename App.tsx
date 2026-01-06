@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
 import AnalysisPanel from './components/AnalysisPanel';
 import FilterBar from './components/FilterBar';
-import { generateMockData, aggregateData, STATES, TYPES } from './services/dataUtils';
+import { generateMockData, aggregateData, STATES, TYPES, DISTRICTS } from './services/dataUtils';
 import { analyzeDataset } from './services/gemini';
 import { EnrolmentRecord, AggregatedStats, AIAnalysisResult, FilterState } from './types';
 
@@ -18,7 +18,7 @@ export default function App() {
     endDate: '',
     state: 'All',
     type: 'All',
-    district: ''
+    district: 'All'
   });
   
   // AI State
@@ -54,8 +54,8 @@ export default function App() {
       // Type Check
       if (filters.type !== 'All' && record.type !== filters.type) return false;
 
-      // District Check (Case Insensitive Partial Match)
-      if (filters.district && !record.district.toLowerCase().includes(filters.district.toLowerCase())) return false;
+      // District Check
+      if (filters.district !== 'All' && record.district !== filters.district) return false;
       
       return true;
     });
@@ -88,24 +88,27 @@ export default function App() {
         filters={filters} 
         setFilters={setFilters} 
         availableStates={STATES} 
+        availableDistricts={DISTRICTS}
         availableTypes={TYPES} 
       />
 
-      {activeTab === 'dashboard' && (
-        <Dashboard 
-          stats={stats} 
-          onRefresh={refreshData} 
-          isLoading={isLoading} 
-        />
-      )}
+      <Suspense fallback={<div className="p-8 text-center text-slate-500">Loading component...</div>}>
+        {activeTab === 'dashboard' && (
+          <Dashboard 
+            stats={stats} 
+            onRefresh={refreshData} 
+            isLoading={isLoading} 
+          />
+        )}
 
-      {(activeTab === 'anomalies' || activeTab === 'insights') && (
-        <AnalysisPanel 
-          analysis={analysisResult} 
-          isAnalyzing={isAnalyzing} 
-          onRunAnalysis={handleRunAnalysis} 
-        />
-      )}
+        {(activeTab === 'anomalies' || activeTab === 'insights') && (
+          <AnalysisPanel 
+            analysis={analysisResult} 
+            isAnalyzing={isAnalyzing} 
+            onRunAnalysis={handleRunAnalysis} 
+          />
+        )}
+      </Suspense>
     </Layout>
   );
 }
