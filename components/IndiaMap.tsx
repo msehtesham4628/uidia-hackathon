@@ -2,8 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { scaleQuantile } from 'd3-scale';
 
-// More reliable and stable GeoJSON source for India states
-const INDIA_GEO_JSON = 'https://raw.githubusercontent.com/Subhash04/India-Map-GeoJSON/master/India_States.json';
+// Reliable TopoJSON source for India states (Deldersveld)
+const INDIA_MAP_URL = 'https://raw.githubusercontent.com/deldersveld/topojson/master/countries/india/india-states.json';
 
 interface IndiaMapProps {
   data: { name: string; count: number }[];
@@ -15,16 +15,16 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Fetch GeoJSON manually to avoid internal library suspension and handle network errors gracefully
+  // Fetch TopoJSON manually to avoid internal library suspension (React 19) and handle errors
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     setError(null);
 
-    fetch(INDIA_GEO_JSON)
+    fetch(INDIA_MAP_URL)
       .then(res => {
         if (!res.ok) {
-          throw new Error(`Failed to fetch map data: ${res.status} ${res.statusText}`);
+          throw new Error(`Failed to fetch map data (${res.status})`);
         }
         return res.json();
       })
@@ -64,8 +64,14 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
 
   const statsMap = useMemo(() => {
     return data.reduce((acc, curr) => {
-      // Normalize state name for better matching (e.g., trimming, case-insensitivity)
-      acc[curr.name.toLowerCase()] = curr.count;
+      // Normalize state name for better matching
+      // Map some common variations if necessary
+      let stateName = curr.name.toLowerCase();
+      // Simple mapping for potential mismatches (example)
+      if (stateName === 'odisha') stateName = 'orissa'; 
+      if (stateName === 'uttarakhand') stateName = 'uttaranchal';
+      
+      acc[stateName] = curr.count;
       return acc;
     }, {} as Record<string, number>);
   }, [data]);
@@ -76,13 +82,13 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
         <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-3">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
         </div>
-        <h3 className="text-slate-900 font-semibold">Map Error</h3>
+        <h3 className="text-slate-900 font-semibold">Map Unavailable</h3>
         <p className="text-slate-500 text-sm mt-1">{error}</p>
         <button 
           onClick={() => window.location.reload()} 
           className="mt-4 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-lg transition-colors"
         >
-          Try Refreshing
+          Retry
         </button>
       </div>
     );
@@ -118,15 +124,23 @@ const IndiaMap: React.FC<IndiaMapProps> = ({ data }) => {
             <Geographies geography={geoData}>
               {({ geographies }) =>
                 geographies.map((geo) => {
-                  // Some GeoJSONs use ST_NM, some use NAME_1, some use state_name
-                  const stateName = geo.properties.ST_NM || geo.properties.NAME_1 || geo.properties.state_name || "";
-                  const count = statsMap[stateName.toLowerCase()] || 0;
+                  // Properties vary by source. Deldersveld usually uses NAME_1.
+                  const rawName = geo.properties.NAME_1 || geo.properties.ST_NM || geo.properties.state_name || "";
+                  const stateName = rawName.toLowerCase();
+                  
+                  // Check mapped names (e.g. orissa -> odisha map check)
+                  let count = statsMap[stateName] || 0;
+                  
+                  // Inverse check if map has 'orissa' but data has 'odisha' (which is normalized to odisha in statsMap)
+                  // The statsMap keys are already normalized to what we expect from data (e.g. odisha).
+                  // If map says 'orissa', we check statsMap['orissa']. If statsMap['orissa'] exists (added in statsMap calc), we use it.
+
                   return (
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
                       onMouseEnter={() => {
-                        setTooltip(`${stateName}: ${count.toLocaleString()} records`);
+                        setTooltip(`${rawName}: ${count.toLocaleString()} records`);
                       }}
                       onMouseLeave={() => {
                         setTooltip(null);
